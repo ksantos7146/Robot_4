@@ -1,32 +1,34 @@
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
+# Build folders
+[Bb]in/
+[Oo]bj/
+build/
 *.exe
-*.out
-*.app
+*.dll
+*.lib
+*.pdb
+*.ipch
+*.iobj
+*.iopt
+*.log
+*.sdf
+*.cache
+*.db
+*.opendb
+*.VC.db
+*.VC.opendb
+
+# Visual Studio settings folders
+.vs/
+*.user
+*.suo
+*.VC.db
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# CMake files (in case you use it later)
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
