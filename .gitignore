@@ -1,34 +1,65 @@
-# Build folders
+# Ignore build results
 [Bb]in/
 [Oo]bj/
-build/
-*.exe
-*.dll
-*.lib
-*.pdb
-*.ipch
-*.iobj
-*.iopt
-*.log
-*.sdf
-*.cache
-*.db
-*.opendb
-*.VC.db
-*.VC.opendb
+Build/
 
-# Visual Studio settings folders
-.vs/
-*.user
-*.suo
-*.VC.db
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# CMake files (in case you use it later)
+# Ignore CMake files (if applicable)
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
 Makefile
+
+# Ignore Visual Studio files
+*.vcxproj.user
+*.vcxproj.filters
+*.opensdf
+*.sdf
+*.cache
+*.pdb
+*.ipch
+*.tlog/
+*.log
+*.ilk
+*.idb
+*.aps
+*.ncb
+*.suo
+*.user
+*.VC.db
+.vs/
+
+# Ignore Visual Studio Code files
+.vscode/
+
+# Ignore backup and autosave files
+*~
+*.bak
+*.tmp
+
+# Ignore environment files
+.env
+*.userosscache
+*.sln.docstates
+
+# Ignore generated files
+*.exe
+*.dll
+*.lib
+
+# Ignore NuGet packages
+*.nupkg
+packages/
+*.snupkg
+
+# Ignore node_modules if mixing JS tools
+node_modules/
+
+# Ignore by-product of analysis tools
+*.code-workspace
+*.VC.VC.opendb
+
+# Project-specific folders (optional)
+Debug/
+Release/
+x64/
+x86/
