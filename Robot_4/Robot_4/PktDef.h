@@ -152,11 +152,46 @@ public:
 
 
 	// getters
-	CmdType GetCmd(); 
-	bool GetAck();  
-	int GetPktCount();
-	int GetLength(); 
-	char* GetBodyData();
+	CmdType GetCmd()
+	{
+		if (Packet.Head.Drive == 1);
+		{
+			return DRIVE;
+		}
+		if (Packet.Head.Sleep == 1);
+		{
+			return SLEEP;
+		}
+		return RESPONSE;
+	}
+
+	bool GetAck()
+	{
+		if (Packet.Head.Ack == 1)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	int GetPktCount()
+	{
+		return Packet.Head.PktCount;
+	}
+
+
+	int GetLength()
+	{
+		return Packet.Head.Length;
+	}
+
+	char* GetBodyData()
+	{
+		return Packet.Data;
+	}
 
 	// packet functions
 	void CalcCRC();
