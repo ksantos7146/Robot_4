@@ -5,6 +5,8 @@ VisualStudioVersion = 17.8.34330.188
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Robot_4", "Robot_4\Robot_4.vcxproj", "{96EC1A0E-CB92-41E6-ABAB-C8153AEBD05B}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Robot4_Tests", "Robot4_Tests\Robot4_Tests.vcxproj", "{F626AB01-F28F-4CB3-AA8B-5AD9339B028C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{96EC1A0E-CB92-41E6-ABAB-C8153AEBD05B}.Release|x64.Build.0 = Release|x64
 		{96EC1A0E-CB92-41E6-ABAB-C8153AEBD05B}.Release|x86.ActiveCfg = Release|Win32
 		{96EC1A0E-CB92-41E6-ABAB-C8153AEBD05B}.Release|x86.Build.0 = Release|Win32
+		{F626AB01-F28F-4CB3-AA8B-5AD9339B028C}.Debug|x64.ActiveCfg = Debug|x64
+		{F626AB01-F28F-4CB3-AA8B-5AD9339B028C}.Debug|x64.Build.0 = Debug|x64
+		{F626AB01-F28F-4CB3-AA8B-5AD9339B028C}.Debug|x86.ActiveCfg = Debug|Win32
+		{F626AB01-F28F-4CB3-AA8B-5AD9339B028C}.Debug|x86.Build.0 = Debug|Win32
+		{F626AB01-F28F-4CB3-AA8B-5AD9339B028C}.Release|x64.ActiveCfg = Release|x64
+		{F626AB01-F28F-4CB3-AA8B-5AD9339B028C}.Release|x64.Build.0 = Release|x64
+		{F626AB01-F28F-4CB3-AA8B-5AD9339B028C}.Release|x86.ActiveCfg = Release|Win32
+		{F626AB01-F28F-4CB3-AA8B-5AD9339B028C}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

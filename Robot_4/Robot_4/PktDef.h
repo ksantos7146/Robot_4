@@ -4,7 +4,10 @@
 #include <fstream>
 
 #define HEADERSIZE 4 // header size = 2 bytes (PktCount) + 1 byte (command flags with padding) + 1 byte (length)
-
+#define FORWARD_VALUE 1
+#define BACKWARD_VALUE 2
+#define RIGHT_VALUE 3
+#define LEFT_VALUE 4
 class PktDef
 {
 private:
@@ -51,10 +54,10 @@ public:
 
 	// enum for Drive directions  
 	enum Direction : unsigned char {
-		FORWARD = 1,
-		BACKWARD = 2,
-		RIGHT = 3,
-		LEFT = 4
+		FORWARD = FORWARD_VALUE,
+		BACKWARD = BACKWARD_VALUE,
+		RIGHT = RIGHT_VALUE,
+		LEFT = LEFT_VALUE
 	};
 
 	// methods
@@ -102,6 +105,11 @@ public:
 	// setters 
 	void SetCmd(CmdType cmd)
 	{
+		// Reset all flags first
+		Packet.Head.Drive = 0;
+		Packet.Head.Sleep = 0;
+		Packet.Head.Ack = 0;
+
 		switch (cmd)
 		{
 		case DRIVE:
