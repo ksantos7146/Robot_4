@@ -3,7 +3,7 @@
 #include <iostream>
 #include <fstream>
 
-const int EmptyPktSize = 10;					//Number of data bytes in a packet with no data field
+#define HEADERSIZE 4 // header size = 2 bytes (PktCount) + 1 byte (command flags with padding) + 1 byte (length)
 
 class PktDef
 {
@@ -57,15 +57,7 @@ public:
 		LEFT = 4
 	};
 
-	// header size = 2 bytes (PktCount) + 1 byte (command flags with padding) + 1 byte (length)
-	static const int HEADERSIZE = 4;
-
-
-
-
-
 	// methods
-
 
 	// default constructor
 	PktDef()
