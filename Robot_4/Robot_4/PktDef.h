@@ -108,21 +108,59 @@ public:
 
 
 	// setters 
-	void SetCmd(CmdType cmd);
-	void SetPktCount(int count);
-	void SetBodyData(char* data, int size);
+	void SetCmd(CmdType cmd)
+	{
+		switch (cmd)
+		{
+		case DRIVE:
+			Packet.Head.Drive = 1;
+			break;
+		case SLEEP:
+			Packet.Head.Sleep = 1;
+			break;
+		case RESPONSE:
+			Packet.Head.Ack = 1;
+			break;
+		}
+	}
+
+	void SetPktCount(int count)
+	{
+		Packet.Head.PktCount = count;
+	}
 
 
-	// getterse
-	CmdType GetCmd();              // determine based on flags
-	bool GetAck();                 // return Ack bit
-	int GetPktCount();             // return packet counter
-	int GetLength();               // return length
-	char* GetBodyData();           // return pointer to body data
+	void SetBodyData(char* srcData, int size)
+	{
+		// check for invalid input
+		if (!srcData || size <= 0) return; 
+
+		// free allocated memory
+		if (Packet.Data) {
+			delete[] Packet.Data;
+		}
+
+		// allocate new memory for the data
+		Packet.Data = new char[size]; 
+
+		// copy the data
+		memcpy(Packet.Data, srcData, size);
+		
+		// update the length in the packets header
+		Packet.Head.Length = size;
+	}
+
+
+	// getters
+	CmdType GetCmd(); 
+	bool GetAck();  
+	int GetPktCount();
+	int GetLength(); 
+	char* GetBodyData();
 
 	// packet functions
-	void CalcCRC();                        // count number of 1 bits across buffer
-	bool CheckCRC(char* buf, int size);    // compare calculated vs. actual CRC
-	char* GenPacket();                     // serialize entire packet to TXBuffer
+	void CalcCRC();
+	bool CheckCRC(char* buf, int size);  
+	char* GenPacket();
 
 };
