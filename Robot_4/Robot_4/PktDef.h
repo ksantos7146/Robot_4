@@ -35,7 +35,7 @@ private:
 	};
 
 	CmdPacket Packet;        // instance of command packet for this object
-	char* TXBuffer;         // raw byte buffer for sending and receiving serialized packet data
+	char* RawBuffer;         // raw byte buffer for sending and receiving serialized packet data
 
 
 public:
@@ -59,5 +59,36 @@ public:
 
 	// header size = 2 bytes (PktCount) + 1 byte (command flags with padding) + 1 byte (length)
 	static const int HEADERSIZE = 4;
+
+
+
+
+
+	// methods
+
+
+	// constructors
+	PktDef();                        // default constructor
+	PktDef(char*);                   // overloaded constructor to parse raw buffer
+	~PktDef();                       // destructor to free any dynamic memory
+
+
+	// setters 
+	void SetCmd(CmdType cmd);
+	void SetPktCount(int count);
+	void SetBodyData(char* data, int size);
+
+
+	// getterse
+	CmdType GetCmd();              // determine based on flags
+	bool GetAck();                 // return Ack bit
+	int GetPktCount();             // return packet counter
+	int GetLength();               // return length
+	char* GetBodyData();           // return pointer to body data
+
+	// packet functions
+	void CalcCRC();                        // count number of 1 bits across buffer
+	bool CheckCRC(char* buf, int size);    // compare calculated vs. actual CRC
+	char* GenPacket();                     // serialize entire packet to TXBuffer
 
 };
