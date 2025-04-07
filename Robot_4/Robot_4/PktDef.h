@@ -25,7 +25,7 @@ private:
 		unsigned char Direction;
 		unsigned char Duration;
 		unsigned char Speed;
-	};
+	}DriveBody;
 
 	// struct for a whole command packet
 	struct CmdPacket {
@@ -67,10 +67,44 @@ public:
 	// methods
 
 
-	// constructors
-	PktDef();                        // default constructor
-	PktDef(char*);                   // overloaded constructor to parse raw buffer
-	~PktDef();                       // destructor to free any dynamic memory
+	// default constructor
+	PktDef()
+	{
+		Packet.Head.PktCount = 0;
+		Packet.Head.Drive = 0;
+		Packet.Head.Status = 0;
+		Packet.Head.Sleep = 0;
+		Packet.Head.Ack = 0;
+		Packet.Head.Padding = 0;
+		Packet.Head.Length = 0;
+
+		Packet.Data = nullptr;
+		Packet.CRC = 0;
+		RawBuffer = nullptr;
+
+
+	}
+
+	// overloaded constructor
+	PktDef(char* src)
+	{
+		// copy header
+		memcpy(&Packet.Head, src, HEADERSIZE);
+
+		// copy data if its there
+		if (Packet.Head.Length > 0)
+		{
+			Packet.Data = new char[Packet.Head.Length];
+			memcpy(Packet.Data, src + HEADERSIZE, Packet.Head.Length);
+		}
+		else
+		{
+			Packet.Data = nullptr;
+		}
+
+		// copy crc
+		memcpy(&Packet.CRC, src + HEADERSIZE + Packet.Head.Length, sizeof(Packet.CRC));
+	}
 
 
 	// setters 
