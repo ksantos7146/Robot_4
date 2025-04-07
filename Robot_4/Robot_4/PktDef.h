@@ -154,11 +154,11 @@ public:
 	// getters
 	CmdType GetCmd()
 	{
-		if (Packet.Head.Drive == 1);
+		if (Packet.Head.Drive == 1)
 		{
 			return DRIVE;
 		}
-		if (Packet.Head.Sleep == 1);
+		if (Packet.Head.Sleep == 1)
 		{
 			return SLEEP;
 		}
@@ -192,6 +192,8 @@ public:
 	{
 		return Packet.Data;
 	}
+
+
 
 	// packet functions
 	void CalcCRC();
