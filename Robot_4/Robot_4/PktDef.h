@@ -196,8 +196,78 @@ public:
 
 
 	// packet functions
-	void CalcCRC();
-	bool CheckCRC(char* buf, int size);  
-	char* GenPacket();
+	void CalcCRC()
+	{
+		int count = 0;
+		int totalSize = HEADERSIZE + Packet.Head.Length;
+
+		for (int i = 0; i < totalSize; i++)
+		{
+			unsigned char byte;
+
+			// first HEADERSIZE bytes come from Packet.Head
+			if (i < HEADERSIZE)
+				byte = *((char*)&Packet.Head + i);
+			else
+				byte = Packet.Data[i - HEADERSIZE];
+
+			// count bits set to 1
+			for (int bit = 0; bit < 8; bit++)
+			{
+				if (byte & (1 << bit))
+					count++;
+			}
+		}
+
+		Packet.CRC = static_cast<unsigned char>(count);
+
+	}
+	bool CheckCRC(char* buf, int size)
+	{
+		if (!buf || size <= 0)
+			return false;
+
+		unsigned char crc = 0;
+
+		// calculate CRC from all bytes except the last one (CRC byte)
+		for (int i = 0; i < size - 1; i++)
+		{
+			unsigned char byte = buf[i];
+
+			// Count bits set to 1
+			for (int bit = 0; bit < 8; bit++)
+			{
+				if (byte & (1 << bit))
+					crc++;
+			}
+		}
+
+		// Compare calculated CRC with the stored CRC
+		return crc == static_cast<unsigned char>(buf[size - 1]);
+	}
+	char* GenPacket()
+	{
+		int totalSize = HEADERSIZE + Packet.Head.Length + 1; // +1 for CRC
+
+		// free previous buffer if exists
+		if (RawBuffer)
+			delete[] RawBuffer;
+
+		// allocate new buffer
+		RawBuffer = new char[totalSize];
+
+		// copy header
+		memcpy(RawBuffer, &Packet.Head, HEADERSIZE);
+
+		// copy data if present
+		if (Packet.Data && Packet.Head.Length > 0)
+			memcpy(RawBuffer + HEADERSIZE, Packet.Data, Packet.Head.Length);
+
+		// recalculate and copy CRC
+		CalcCRC();
+		RawBuffer[totalSize - 1] = Packet.CRC;
+
+		return RawBuffer;
+	}
 
 };
