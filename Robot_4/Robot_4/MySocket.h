@@ -31,8 +31,8 @@ class MySocket
 {
 private:
 	char* Buffer;						// raw data buffer
-	SOCKET WelcomeSocket;				// for tcp server
-	SOCKET ConnectionSocket;			// used for client/server communication 
+	int WelcomeSocket;					// for tcp server
+	int ConnectionSocket;				// used for client/server communication 
 	sockaddr_in SvrAddr;				// server address info
 	SocketType mySocket;				// client or server
 	string IPAddr;						// IP addess
@@ -133,50 +133,127 @@ public:
 	//  TCP client connect
 	void ConnectTCP()
 	{
+		if (mySocket != CLIENT || connectionType != TCP) {
+			std::cout << "ERROR: ConnectTCP is only for TCP clients\n";
+			return;
+		}
 
+		if (connect(ConnectionSocket, (struct sockaddr*)&SvrAddr, sizeof(SvrAddr)) == SOCKET_ERROR) {
+			std::cout << "ERROR: TCP connection failed\n";
+			return;
+		}
+
+		bTCPConnect = true;
+		std::cout << "Connected to TCP server\n";
 	}
 
 	// TCP disconnect
 	void DisconnectTCP()
 	{
+		if (connectionType != TCP || !bTCPConnect) {
+			std::cout << "ERROR: No TCP connection to disconnect\n";
+			return;
+		}
 
+		close(ConnectionSocket);
+		bTCPConnect = false;
+
+		std::cout << "TCP connection closed\n";
 	}
 
-	void SendData(const char*, int)
+	void SendData(const char* data, int size)
 	{
+		if (size > MaxSize) {
+			std::cout << "ERROR: Data exceeds buffer size\n";
+			return;
+		}
 
+		int sent = 0;
+
+		if (connectionType == TCP) {
+			// If server, use WelcomeSocket; if client, use ConnectionSocket
+			sent = send((mySocket == SERVER ? WelcomeSocket : ConnectionSocket), data, size, 0);
+		}
+		else {
+			// UDP uses sendto with SvrAddr
+			sent = sendto(ConnectionSocket, data, size, 0, (struct sockaddr*)&SvrAddr, sizeof(SvrAddr));
+		}
+
+		if (sent == SOCKET_ERROR)
+			std::cout << "ERROR: Failed to send data\n";
+		else
+			std::cout << "Sent " << sent << " bytes\n";
 	}
 
-	int GetData(char*)
+	int GetData(char* dest)
 	{
+		struct sockaddr_in FromAddr;
+		socklen_t addrLen = sizeof(FromAddr);
+		int received = 0;
 
+		if (connectionType == TCP) {
+			// Use correct socket depending on role
+			received = recv((mySocket == SERVER ? WelcomeSocket : ConnectionSocket), Buffer, MaxSize, 0);
+		}
+		else {
+			// UDP uses recvfrom
+			received = recvfrom(ConnectionSocket, Buffer, MaxSize, 0, (struct sockaddr*)&FromAddr, &addrLen);
+		}
+
+		if (received == SOCKET_ERROR) {
+			std::cout << "ERROR: Failed to receive data\n";
+			return -1;
+		}
+
+		memcpy(dest, Buffer, received); // Copy data to destination
+		return received;
 	}
 
+
+	// getters and setters
 	string GetIPAddr()
 	{
-
+		return IPAddr;
 	}
 
-	void SetIPAddr(string)
+	void SetIPAddr(string newIP)
 	{
+		if (bTCPConnect) {
+			std::cout << "ERROR: Cannot change IP while connected\n";
+			return;
+		}
 
+		IPAddr = newIP;
+		inet_pton(AF_INET, IPAddr.c_str(), &SvrAddr.sin_addr);
 	}
-	void SetPort(int)
+	void SetPort(int newPort)
 	{
+		if (bTCPConnect) {
+			std::cout << "ERROR: Cannot change port while connected\n";
+			return;
+		}
 
+		port = newPort;
+		SvrAddr.sin_port = htons(port);
 	}
+
 	int GetPort()
 	{
-
+		return port;
 	}
 
 	SocketType GetType()
 	{
-
+		return mySocket;
 	}
 
-	void SetType(SocketType)
+	void SetType(SocketType newType)
 	{
+		if (bTCPConnect) {
+			std::cout << "ERROR: Cannot change type while connected\n";
+			return;
+		}
 
+		mySocket = newType;
 	}
 };
