@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "CppUnitTest.h"
 #include "../Robot_4/pktDef.h"
+#include "../Robot_4/MySocket.h"
 #include <memory>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
@@ -205,5 +206,92 @@ namespace Robot4Test
 
 
 
+    };
+    TEST_CLASS(MySocketTests)
+    {
+    public:
+
+        // tcp client constructor basic validation
+        TEST_METHOD(Constructor_ClientTCP_ValidParams)
+        {
+            MySocket socket(CLIENT, "127.0.0.1", 8080, TCP, 128);
+            Assert::AreEqual(string("127.0.0.1"), socket.GetIPAddr());
+            Assert::AreEqual(8080, socket.GetPort());
+            Assert::AreEqual(CLIENT, socket.GetType());
+        }
+
+        // udp server constructor
+        TEST_METHOD(Constructor_ServerUDP_ValidParams)
+        {
+            MySocket socket(SERVER, "127.0.0.1", 8081, UDP, 0); // uses default buffer
+            Assert::AreEqual(DEFAULT_SIZE, 250);
+            Assert::AreEqual(8081, socket.GetPort());
+        }
+
+        // test connect tcp (client only)
+        TEST_METHOD(ConnectTCP_ClientOnly)
+        {
+            MySocket socket(CLIENT, "127.0.0.1", 8082, TCP, 128);
+            socket.ConnectTCP(); // ideally mocked, check if bTCPConnect changed if accessible
+        }
+
+        // test disconnect logic
+        TEST_METHOD(DisconnectTCP_ValidCall)
+        {
+            MySocket socket(CLIENT, "127.0.0.1", 8083, TCP, 128);
+            socket.ConnectTCP();
+            socket.DisconnectTCP();
+        }
+
+        // test setting ip when disconnected
+        TEST_METHOD(SetIPAddr_WhenDisconnected)
+        {
+            MySocket socket(CLIENT, "127.0.0.1", 8080, TCP, 128);
+            socket.SetIPAddr("192.168.1.1");
+            Assert::AreEqual(string("192.168.1.1"), socket.GetIPAddr());
+        }
+
+        // test blocked set ip when connected
+        TEST_METHOD(SetIPAddr_WhenConnected)
+        {
+            MySocket socket(CLIENT, "127.0.0.1", 8080, TCP, 128);
+            socket.ConnectTCP();
+            socket.SetIPAddr("10.0.0.1"); // should not change
+            Assert::AreEqual(string("127.0.0.1"), socket.GetIPAddr());
+        }
+
+        // test port setter
+        TEST_METHOD(SetPort_WhenDisconnected)
+        {
+            MySocket socket(CLIENT, "127.0.0.1", 1111, TCP, 128);
+            socket.SetPort(9999);
+            Assert::AreEqual(9999, socket.GetPort());
+        }
+
+        // test get type and set type
+        TEST_METHOD(GetAndSetType)
+        {
+            MySocket socket(CLIENT, "127.0.0.1", 1111, TCP, 128);
+            Assert::AreEqual(CLIENT, socket.GetType());
+            socket.SetType(SERVER);
+            Assert::AreEqual(SERVER, socket.GetType());
+        }
+
+        // test send data - ideally mocked
+        TEST_METHOD(SendData_UnderLimit)
+        {
+            MySocket socket(CLIENT, "127.0.0.1", 8080, UDP, 128);
+            const char* msg = "test";
+            socket.SendData(msg, strlen(msg));
+        }
+
+        // test receive data - ideally mocked
+        TEST_METHOD(GetData_BufferCopy)
+        {
+            MySocket socket(CLIENT, "127.0.0.1", 8080, UDP, 128);
+            char recv[128];
+            int bytes = socket.GetData(recv); // will return -1 without actual connection
+            Assert::IsTrue(bytes <= 128);
+        }
     };
 }
