@@ -255,10 +255,10 @@ public:
 	}
 
 	// get current port
-	int GetPort() { return port; }
+	int GetPort() const { return port; }
 
 	// get current socket type (CLIENT or SERVER)
-	SocketType GetType() { return mySocket; }
+	SocketType GetType() const { return mySocket; }
 
 	// change socket type if not connected
 	void SetType(SocketType newType) 

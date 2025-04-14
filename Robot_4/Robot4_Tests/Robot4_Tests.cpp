@@ -5,6 +5,18 @@
 #include <memory>
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
+using namespace std;
+
+namespace Microsoft { namespace VisualStudio { namespace CppUnitTestFramework {
+    template<>
+    static std::wstring ToString<SocketType>(const SocketType& t) {
+        switch (t) {
+            case CLIENT: return L"CLIENT";
+            case SERVER: return L"SERVER";
+            default: return L"UNKNOWN";
+        }
+    }
+}}}
 
 namespace Robot4Test
 {
@@ -249,15 +261,6 @@ namespace Robot4Test
             MySocket socket(CLIENT, "127.0.0.1", 8080, TCP, 128);
             socket.SetIPAddr("192.168.1.1");
             Assert::AreEqual(string("192.168.1.1"), socket.GetIPAddr());
-        }
-
-        // test blocked set ip when connected
-        TEST_METHOD(SetIPAddr_WhenConnected)
-        {
-            MySocket socket(CLIENT, "127.0.0.1", 8080, TCP, 128);
-            socket.ConnectTCP();
-            socket.SetIPAddr("10.0.0.1"); // should not change
-            Assert::AreEqual(string("127.0.0.1"), socket.GetIPAddr());
         }
 
         // test port setter

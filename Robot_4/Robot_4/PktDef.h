@@ -151,7 +151,7 @@ public:
 
 
 	// getters
-	CmdType GetCmd()
+	CmdType GetCmd() const
 	{
 		if (Packet.Head.Drive == 1)
 		{
@@ -164,7 +164,7 @@ public:
 		return RESPONSE;
 	}
 
-	bool GetAck()
+	bool GetAck() const
 	{
 		if (Packet.Head.Ack == 1)
 		{
@@ -176,18 +176,17 @@ public:
 		}
 	}
 
-	int GetPktCount()
+	int GetPktCount() const
 	{
 		return Packet.Head.PktCount;
 	}
 
-
-	int GetLength()
+	int GetLength() const
 	{
 		return Packet.Head.Length;
 	}
 
-	char* GetBodyData()
+	char* GetBodyData() const
 	{
 		return Packet.Data;
 	}
