@@ -10,11 +10,6 @@
 #define RIGHT 3
 #define LEFT 4
 
-// Add size constants
-#define TELEMSIZE sizeof(TELEMETRY)
-#define CRCSIZE sizeof(unsigned char)
-#define DRIVEBODYSIZE sizeof(DRIVEBODY)
-
 // Add Telemetry structure
 typedef struct Telemetry {
 	unsigned short LastPktCounter;
@@ -24,6 +19,18 @@ typedef struct Telemetry {
 	unsigned char LastCmdValue;
 	unsigned char LastCmdSpeed;
 }TELEMETRY;
+
+// Add DriveBody structure
+typedef struct DriveBody {
+	unsigned char Direction;
+	unsigned char Duration;
+	unsigned char Speed;
+}DRIVEBODY;
+
+// Add size constants
+#define TELEMSIZE sizeof(TELEMETRY)
+#define CRCSIZE sizeof(unsigned char)
+#define DRIVEBODYSIZE sizeof(DRIVEBODY)
 
 class PktDef
 {
@@ -39,13 +46,6 @@ private:
 		unsigned char Padding : 4;
 		unsigned char Length;
 	}Head;
-
-	// struct for drive command parameters
-	struct DriveBody {
-		unsigned char Direction;
-		unsigned char Duration;
-		unsigned char Speed;
-	}DriveBody;
 
 	// struct for a whole command packet
 	struct CmdPacket {
