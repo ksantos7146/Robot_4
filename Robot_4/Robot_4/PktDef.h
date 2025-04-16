@@ -2,12 +2,28 @@
 #include <memory>
 #include <iostream>
 #include <fstream>
+#include <bitset>
 
 #define HEADERSIZE 4 // header size = 2 bytes (PktCount) + 1 byte (command flags with padding) + 1 bytes (length)
 #define FORWARD 1
 #define BACKWARD 2
 #define RIGHT 3
 #define LEFT 4
+
+// Add size constants
+#define TELEMSIZE sizeof(TELEMETRY)
+#define CRCSIZE sizeof(unsigned char)
+#define DRIVEBODYSIZE sizeof(DRIVEBODY)
+
+// Add Telemetry structure
+typedef struct Telemetry {
+	unsigned short LastPktCounter;
+	unsigned short CurrentGrade;
+	unsigned short HitCount;
+	unsigned char LastCmd;
+	unsigned char LastCmdValue;
+	unsigned char LastCmdSpeed;
+}TELEMETRY;
 
 class PktDef
 {
@@ -197,28 +213,37 @@ public:
 	void CalcCRC()
 	{
 		int count = 0;
-		int totalSize = HEADERSIZE + Packet.Head.Length;
+		
+		// Count header bits
+		for (int i = 0; i < 16; i++) 
+			count += (1 & (Packet.Head.PktCount >> i));
+		
+		count += (1 & (Packet.Head.Drive));
+		count += (1 & (Packet.Head.Status));
+		count += (1 & (Packet.Head.Sleep));
+		count += (1 & (Packet.Head.Ack));
+		
+		for (int i = 0; i < 4; i++) 
+			count += (1 & (Packet.Head.Padding >> i));
+		
+		for (int i = 0; i < 8; i++) 
+			count += (1 & (Packet.Head.Length >> i));
 
-		for (int i = 0; i < totalSize; i++)
-		{
-			unsigned char byte;
-
-			// first HEADERSIZE bytes come from Packet.Head
-			if (i < HEADERSIZE)
-				byte = *((char*)&Packet.Head + i);
-			else
-				byte = Packet.Data[i - HEADERSIZE];
-
-			// count bits set to 1
-			for (int bit = 0; bit < 8; bit++)
-			{
-				if (byte & (1 << bit))
-					count++;
+		// Count body bits based on packet type
+		if (Packet.Head.Ack == 1 && Packet.Data) {
+			// Count telemetry bits
+			for (int i = 0; i < TELEMSIZE; i++) {
+				count += std::bitset<8>(Packet.Data[i]).count();
+			}
+		}
+		else if (Packet.Head.Drive == 1 && Packet.Data) {
+			// Count drive body bits
+			for (int i = 0; i < DRIVEBODYSIZE; i++) {
+				count += std::bitset<8>(Packet.Data[i]).count();
 			}
 		}
 
 		Packet.CRC = static_cast<unsigned char>(count);
-
 	}
 	bool CheckCRC(char* buf, int size)
 	{
@@ -230,14 +255,7 @@ public:
 		// calculate CRC from all bytes except the last one (CRC byte)
 		for (int i = 0; i < size - 1; i++)
 		{
-			unsigned char byte = buf[i];
-
-			// Count bits set to 1
-			for (int bit = 0; bit < 8; bit++)
-			{
-				if (byte & (1 << bit))
-					crc++;
-			}
+			crc += std::bitset<8>(buf[i]).count();
 		}
 
 		// Compare calculated CRC with the stored CRC
@@ -245,25 +263,29 @@ public:
 	}
 	char* GenPacket()
 	{
-		int totalSize = HEADERSIZE + Packet.Head.Length + 1; // +1 for CRC
+		int totalSize = HEADERSIZE + Packet.Head.Length + CRCSIZE;
 
 		// free previous buffer if exists
-		if (RawBuffer)
+		if (RawBuffer) {
 			delete[] RawBuffer;
+		}
 
 		// allocate new buffer
 		RawBuffer = new char[totalSize];
+		int offset = 0;
 
 		// copy header
-		memcpy(RawBuffer, &Packet.Head, HEADERSIZE);
+		memcpy(RawBuffer + offset, &Packet.Head, HEADERSIZE);
+		offset += HEADERSIZE;
 
-		// copy data if present
-		if (Packet.Data && Packet.Head.Length > 0)
-			memcpy(RawBuffer + HEADERSIZE, Packet.Data, Packet.Head.Length);
+		// copy body if exists
+		if (Packet.Head.Length > 0 && Packet.Data) {
+			memcpy(RawBuffer + offset, Packet.Data, Packet.Head.Length);
+			offset += Packet.Head.Length;
+		}
 
-		// recalculate and copy CRC
-		CalcCRC();
-		RawBuffer[totalSize - 1] = Packet.CRC;
+		// copy CRC
+		memcpy(RawBuffer + offset, &Packet.CRC, CRCSIZE);
 
 		return RawBuffer;
 	}
