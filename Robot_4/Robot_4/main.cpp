@@ -48,7 +48,7 @@ int main() {
         ([](const crow::request&, string ip, int port) {
         robotIP = ip;
         robotPort = port;
-        return "Connected to " + ip + ":" + to_string(port);
+        return crow::response("Connected to " + ip + ":" + to_string(port));
             });
 
     // Telecommand route (ex: "Forward,10")
@@ -59,7 +59,7 @@ int main() {
         if (cmd == "Sleep") {
             PktDef pkt;
             pkt.SetCmd(PktDef::SLEEP);
-            return talkToRobot(pkt);
+            return crow::response(talkToRobot(pkt));
         }
 
         // Assumes format like: "Forward,10"
@@ -71,7 +71,7 @@ int main() {
         else if (dirStr == "Backward") data[0] = BACKWARD;
         else if (dirStr == "Left") data[0] = LEFT;
         else if (dirStr == "Right") data[0] = RIGHT;
-        else return "Invalid direction";
+        else return crow::response("Invalid direction");
 
         data[1] = dur;
         data[2] = 100; // Speed
@@ -79,7 +79,7 @@ int main() {
         PktDef pkt;
         pkt.SetCmd(PktDef::DRIVE);
         pkt.SetBodyData(data, 3);
-        return talkToRobot(pkt);
+        return crow::response(talkToRobot(pkt));
             });
 
     // Telemetry request
@@ -87,7 +87,7 @@ int main() {
         ([] {
         PktDef pkt;
         pkt.SetCmd(PktDef::RESPONSE);  // Or use pkt.SetTelemetryRequest() if defined
-        return talkToRobot(pkt);
+        return crow::response(talkToRobot(pkt));
             });
 
     app.port(18080).run();
