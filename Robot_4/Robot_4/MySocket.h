@@ -3,16 +3,18 @@
 #include <iostream>
 #include <string>
 #include <cstring>
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#pragma comment(lib, "Ws2_32.lib")
-
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 
 using namespace std;
 
 // default buffer size
 #define DEFAULT_SIZE 250
-
 
 enum SocketType 
 {
@@ -30,9 +32,9 @@ class MySocket
 {
 private:
 	char* Buffer;                // raw data buffer
-	SOCKET WelcomeSocket;        // for accepting TCP client connections
-	SOCKET ConnectionSocket;     // connection socket (TCP/UDP)
-	sockaddr_in SvrAddr;         // server address struct
+	int WelcomeSocket;           // for accepting TCP client connections
+	int ConnectionSocket;        // connection socket (TCP/UDP)
+	struct sockaddr_in SvrAddr;  // server address struct
 	SocketType mySocket;         // CLIENT or SERVER
 	string IPAddr;               // IP address string
 	int port;                    // Port number
@@ -43,16 +45,7 @@ private:
 public:
 	// constructor to initialize socket properties and allocate buffer
 	MySocket(SocketType socketType, string ipAddress, unsigned int portNumber, ConnectionType connectionType, unsigned int bufferSize) {
-		
-		// initialze winsock
-		WSADATA wsaData;
-		if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-			cout << "ERROR: WSAStartup failed\n";
-			exit(1);
-		}
-
 		// set the properties
-
 		mySocket = socketType;
 		IPAddr = ipAddress;
 		port = portNumber;
@@ -60,58 +53,59 @@ public:
 		bTCPConnect = false;
 
 		// use default buffer if the new one is invalid
-
-
-
-		if (bufferSize > 0)
-		{
+		if (bufferSize > 0) {
 			MaxSize = bufferSize;
-		}
-		else
-		{
+		} else {
 			MaxSize = DEFAULT_SIZE;
 		}
 
 		Buffer = new char[MaxSize]; // allocate for the new buffer
 
-
+		// Initialize socket address structure
 		memset(&SvrAddr, 0, sizeof(SvrAddr));
 		SvrAddr.sin_family = AF_INET;
 		SvrAddr.sin_port = htons(port);
 		inet_pton(AF_INET, IPAddr.c_str(), &SvrAddr.sin_addr);
 
+		// Create socket
 		ConnectionSocket = socket(AF_INET, (connectionType == TCP ? SOCK_STREAM : SOCK_DGRAM), 0);
-		if (ConnectionSocket == INVALID_SOCKET) {
-			cout << "ERROR: Failed to create socket\n";
-			WSACleanup();
+		if (ConnectionSocket < 0) {
+			cerr << "ERROR: Failed to create socket: " << strerror(errno) << endl;
 			exit(1);
 		}
 
 		if (mySocket == SERVER) {
-			if (bind(ConnectionSocket, (SOCKADDR*)&SvrAddr, sizeof(SvrAddr)) == SOCKET_ERROR) {
-				cout << "ERROR: Failed to bind socket\n";
-				closesocket(ConnectionSocket);
-				WSACleanup();
+			// Set socket options to reuse address
+			int opt = 1;
+			if (setsockopt(ConnectionSocket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+				cerr << "ERROR: Failed to set socket options: " << strerror(errno) << endl;
+				close(ConnectionSocket);
+				exit(1);
+			}
+
+			if (bind(ConnectionSocket, (struct sockaddr*)&SvrAddr, sizeof(SvrAddr)) < 0) {
+				cerr << "ERROR: Failed to bind socket: " << strerror(errno) << endl;
+				close(ConnectionSocket);
 				exit(1);
 			}
 
 			if (connectionType == TCP) {
-				if (listen(ConnectionSocket, 1) == SOCKET_ERROR) {
-					cout << "ERROR: Failed to listen\n";
-					closesocket(ConnectionSocket);
-					WSACleanup();
+				if (listen(ConnectionSocket, 1) < 0) {
+					cerr << "ERROR: Failed to listen: " << strerror(errno) << endl;
+					close(ConnectionSocket);
 					exit(1);
 				}
 
-				cout << "Waiting for client connection...\n";
-				WelcomeSocket = accept(ConnectionSocket, NULL, NULL);
-				if (WelcomeSocket == INVALID_SOCKET) {
-					cout << "ERROR: Failed to accept connection\n";
-					WSACleanup();
+				cout << "Waiting for client connection..." << endl;
+				struct sockaddr_in clientAddr;
+				socklen_t clientLen = sizeof(clientAddr);
+				WelcomeSocket = accept(ConnectionSocket, (struct sockaddr*)&clientAddr, &clientLen);
+				if (WelcomeSocket < 0) {
+					cerr << "ERROR: Failed to accept connection: " << strerror(errno) << endl;
+					close(ConnectionSocket);
 					exit(1);
-				}
-				else {
-					cout << "TCP connection established with client\n";
+				} else {
+					cout << "TCP connection established with client" << endl;
 					bTCPConnect = true;
 				}
 			}
@@ -121,105 +115,85 @@ public:
 	// destructor to clean up sockets and buffer
 	~MySocket() {
 		delete[] Buffer;
-		if (bTCPConnect)
-			closesocket(WelcomeSocket);
-		closesocket(ConnectionSocket);
-		WSACleanup();
-		cout << "Sockets closed and memory freed\n";
+		if (bTCPConnect) {
+			close(WelcomeSocket);
+		}
+		close(ConnectionSocket);
+		cout << "Sockets closed and memory freed" << endl;
 	}
 
 	// for TCP only: initiate a connection
-	void ConnectTCP()
-	{
+	void ConnectTCP() {
 		if (mySocket != CLIENT || connectionType != TCP) {
-			cout << "ERROR: ConnectTCP is only for TCP clients\n";
+			cerr << "ERROR: ConnectTCP is only for TCP clients" << endl;
 			return;
 		}
 
-		if (connect(ConnectionSocket, (SOCKADDR*)&SvrAddr, sizeof(SvrAddr)) == SOCKET_ERROR) {
-			cout << "ERROR: TCP connection failed\n";
+		if (connect(ConnectionSocket, (struct sockaddr*)&SvrAddr, sizeof(SvrAddr)) < 0) {
+			cerr << "ERROR: TCP connection failed: " << strerror(errno) << endl;
 			return;
 		}
 
 		bTCPConnect = true;
-		cout << "Connected to TCP server\n";
+		cout << "Connected to TCP server" << endl;
 	}
 
 	// disconnect TCP connection cleanly
-	void DisconnectTCP() 
-	{
-		if (connectionType != TCP || !bTCPConnect) 
-		{
-			cout << "ERROR: No TCP connection to disconnect\n";
+	void DisconnectTCP() {
+		if (connectionType != TCP || !bTCPConnect) {
+			cerr << "ERROR: No TCP connection to disconnect" << endl;
 			return;
 		}
 
-		closesocket(ConnectionSocket);
+		shutdown(ConnectionSocket, SHUT_RDWR);
+		close(ConnectionSocket);
 		bTCPConnect = false;
-		cout << "TCP connection closed\n";
+		cout << "TCP connection closed" << endl;
 	}
 
 	// send data (works for both TCP and UDP)
-	void SendData(const char* data, int size) 
-	{
-		if (size > MaxSize) 
-		{
-			cout << "ERROR: Data exceeds buffer size\n";
+	void SendData(const char* data, int size) {
+		if (size > MaxSize) {
+			cerr << "ERROR: Data exceeds buffer size" << endl;
 			return;
 		}
 
 		int sent = 0;
-
-		if (connectionType == TCP) 
-		{
-			if (mySocket == SERVER)
-			{
+		if (connectionType == TCP) {
+			if (mySocket == SERVER) {
 				sent = send(WelcomeSocket, data, size, 0);
-			}
-
-			else
-			{
+			} else {
 				sent = send(ConnectionSocket, data, size, 0);
 			}
-
-		}
-		else 
-		{
-			sent = sendto(ConnectionSocket, data, size, 0, (SOCKADDR*)&SvrAddr, sizeof(SvrAddr));
+		} else {
+			sent = sendto(ConnectionSocket, data, size, 0, (struct sockaddr*)&SvrAddr, sizeof(SvrAddr));
 		}
 
-		if (sent == SOCKET_ERROR)
-			cout << "ERROR: Failed to send data\n";
-		else
-			cout << "Sent " << sent << " bytes\n";
+		if (sent < 0) {
+			cerr << "ERROR: Failed to send data: " << strerror(errno) << endl;
+		} else {
+			cout << "Sent " << sent << " bytes" << endl;
+		}
 	}
 
 	// Receive data and copy it into the destination buffer
 	int GetData(char* dest) {
-		sockaddr_in FromAddr;
-		int addrLen = sizeof(FromAddr);
+		struct sockaddr_in FromAddr;
+		socklen_t addrLen = sizeof(FromAddr);
 		int received = 0;
 
-		if (connectionType == TCP) 
-		{
-			if (mySocket == SERVER)
-			{
+		if (connectionType == TCP) {
+			if (mySocket == SERVER) {
 				received = recv(WelcomeSocket, Buffer, MaxSize, 0);
-			}
-
-			else
-			{
+			} else {
 				received = recv(ConnectionSocket, Buffer, MaxSize, 0);
 			}
-		}
-		else 
-		{
-			received = recvfrom(ConnectionSocket, Buffer, MaxSize, 0, (SOCKADDR*)&FromAddr, &addrLen);
+		} else {
+			received = recvfrom(ConnectionSocket, Buffer, MaxSize, 0, (struct sockaddr*)&FromAddr, &addrLen);
 		}
 
-		if (received == SOCKET_ERROR) 
-		{
-			cout << "ERROR: Failed to receive data\n";
+		if (received < 0) {
+			cerr << "ERROR: Failed to receive data: " << strerror(errno) << endl;
 			return -1;
 		}
 
@@ -231,11 +205,9 @@ public:
 	string GetIPAddr() { return IPAddr; }
 
 	// change IP address if not connected
-	void SetIPAddr(string newIP) 
-	{
-		if (bTCPConnect)
-		{
-			cout << "ERROR: Cannot change IP while connected\n";
+	void SetIPAddr(string newIP) {
+		if (bTCPConnect) {
+			cerr << "ERROR: Cannot change IP while connected" << endl;
 			return;
 		}
 		IPAddr = newIP;
@@ -243,29 +215,21 @@ public:
 	}
 
 	// change port if not connected
-	void SetPort(int newPort) 
-	{
-		if (bTCPConnect) 
-		{
-			cout << "ERROR: Cannot change port while connected\n";
+	void SetPort(int newPort) {
+		if (bTCPConnect) {
+			cerr << "ERROR: Cannot change port while connected" << endl;
 			return;
 		}
 		port = newPort;
 		SvrAddr.sin_port = htons(port);
 	}
 
-	// get current port
-	int GetPort() const { return port; }
+	int GetPort() { return port; }
+	SocketType GetType() { return mySocket; }
 
-	// get current socket type (CLIENT or SERVER)
-	SocketType GetType() const { return mySocket; }
-
-	// change socket type if not connected
-	void SetType(SocketType newType) 
-	{
-		if (bTCPConnect) 
-		{
-			cout << "ERROR: Cannot change type while connected\n";
+	void SetType(SocketType newType) {
+		if (bTCPConnect || WelcomeSocket != -1) {
+			cerr << "ERROR: Cannot change SocketType while active" << endl;
 			return;
 		}
 		mySocket = newType;
